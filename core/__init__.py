@@ -17,6 +17,7 @@ def create_app(config_name):
     migrate.init_app(app, db)
     
     # register blueprints
-    # from .user import 
+    from .user import user 
+    app.register_blueprint(user)
 
     return app
