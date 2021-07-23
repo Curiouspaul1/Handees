@@ -1,9 +1,6 @@
 from flask import Flask
 from config import config
-from .extensions import (
-    db, migrate
-)
-import os
+
 
 def create_app(config_name):
     # create flask app instance
@@ -12,10 +9,6 @@ def create_app(config_name):
     # set config using config name
     app.config.from_object(config[config_name])
 
-    # register extensions
-    db.init_app(app)
-    migrate.init_app(app, db)
-    
     # register blueprints
     from .user import user 
     app.register_blueprint(user)

@@ -1,9 +1,10 @@
 from geoalchemy2.exc import GeoAlchemyError
 from sqlalchemy.orm import backref
-from core.extensions import db
 from flask import current_app
 from datetime import datetime as d
 from geoalchemy2 import Geometry
+from core.extensions import db
+
 
 # Base class
 class Base(db.Model):
@@ -131,6 +132,7 @@ class Gig(Base):
     lat = db.Column(db.Float)
     lon = db.Column(db.Float)
     geometry = db.Column(Geometry(geometry_type='POINT'))
+    date_created = db.Column(db.DateTime(), default=d.utcnow())
 
 
 class Workstatus(Base):
@@ -143,4 +145,3 @@ class Workstatus(Base):
     time_of_completion = db.Column(db.DateTime())
     arrived_home = db.Column(db.Boolean)
     time_of_home_arrival = db.Column(db.DateTime())
-    
