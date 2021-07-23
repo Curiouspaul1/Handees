@@ -1,11 +1,12 @@
 from core.extensions import db
+from flask import current_app
 from datetime import datetime as d
 
 # Base class
 class Base(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
 
-
+# User permissions
 class PERMISSIONS:
     # client permissions
     GET_CLIENT = 1
@@ -24,7 +25,23 @@ class User(Base):
     profile_photo = db.Column(db.String(200))
     telephone = db.Column(db.String(20), unique=True)
     address = db.Column(db.String(100))
+    personal_id = db.Column(db.String(200))
+
+    def __init__(self) -> None:
+        super().__init__()
+        if self.role is None:
+            if self.email in current_app.config['ADMIN_EMAILS']:
+                self.role = Role.query.filter_by(name='admin').first()
+            if self.role is None:
+                self.role = Role.query.filter_by(default=True).first()
     
+    # permission helper methods
+    def can(self, perm):
+        return self.role is not None and self.role.has_permission(perm)
+    
+    def is_admin(self):
+        return self.can(PERMISSIONS.ADMIN)
+                
 
 class Role(Base):
     name = db.Column(db.String(50))
@@ -51,6 +68,26 @@ class Role(Base):
         if self.has_permission(perm):
             self.permissions -= perm
 
+    @staticmethod
+    def add_roles():
+        roles = {
+            'client': [PERMISSIONS.GET_CLIENT, PERMISSIONS.GIVE_RATING, PERMISSIONS.POST_GIG],
+            'handyman': [PERMISSIONS.ACCEPT_GIG],
+            'admin': [PERMISSIONS.ADMIN]
+        }
+        default_role = 'client'
+        for item in roles:
+            role = Role.query.filter_by(name=role).first()
+            if role is None:
+                role = Role(name=item)
+            role.reset_permissions()
+            # add permissions for given role
+            for perm in roles[item]:
+                role.add_permission(perm)
+            # set as default role if name matches default_role 
+            role.is_default = (role.name == default_role)
+            db.session.add(role)
+        db.session.commit()
 
 
 
