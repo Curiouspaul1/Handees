@@ -1,6 +1,9 @@
+from geoalchemy2.exc import GeoAlchemyError
+from sqlalchemy.orm import backref
 from core.extensions import db
 from flask import current_app
 from datetime import datetime as d
+from geoalchemy2 import Geometry
 
 # Base class
 class Base(db.Model):
@@ -25,8 +28,15 @@ class User(Base):
     profile_photo = db.Column(db.String(200))
     telephone = db.Column(db.String(20), unique=True)
     address = db.Column(db.String(100))
+    lon = db.Column(db.Float)
+    lat = db.Column(db.Float)
     is_handyman = db.Column(db.Boolean, default=False)
+    email_verified = db.Column(db.Boolean, default=False)
     personal_id = db.Column(db.String(200))
+    geometry = db.Column(Geometry(geometry_type='POINT'))
+    # relationships
+    gigs_ = db.relationship('Gig', backref='owner')
+    workstatus = db.relationship('Workstatus', backref='user', uselist=False)
 
     def __init__(self) -> None:
         super().__init__()
@@ -36,6 +46,7 @@ class User(Base):
             if self.role is None:
                 if self.is_handyman:
                     self.role = Role.query.filter_by(name='handyman').first()
+                    self.add_workstatus()
                 else:
                     self.role = Role.query.filter_by(default=True).first()
     
@@ -45,12 +56,31 @@ class User(Base):
     
     def is_admin(self):
         return self.can(PERMISSIONS.ADMIN)
-                
+    
+    def contact_info(self):
+        return {
+            "telephone": self.telephone,
+            "address": self.address,
+            "email": self.email
+        }
+
+    def verify_email(self):
+        if self.verify_email is False:
+            self.verify_email = True
+            db.session.commit()
+        return self.verify_email
+    
+    def add_workstatus(self):
+        self.workstatus = Workstatus()
+    
+    # def update_work_status(self):
+         
 
 class Role(Base):
     name = db.Column(db.String(50))
     is_default = db.Column(db.Boolean, default=False, index=True)
     permissions = db.Column(db.Integer)
+    # relationships
     users = db.relationship('User', backref='role', lazy='dynamic')
 
     def __init__(self) -> None:
@@ -94,5 +124,23 @@ class Role(Base):
         db.session.commit()
 
 
+class Gig(Base):
+    title = db.Column(db.String(50))
+    description = db.Colum(db.Text)
+    price = db.Column(db.Float)
+    lat = db.Column(db.Float)
+    lon = db.Column(db.Float)
+    geometry = db.Column(Geometry(geometry_type='POINT'))
 
+
+class Workstatus(Base):
+    time_of_departure = db.Column(db.DateTime(), default=d.utcnow())
+    current_lon = db.Column(db.Float)
+    current_lat = db.Column(db.Float)
+    destination_lon = db.Column(db.Float)
+    destination_lat = db.Column(db.Float)
+    completed_task = db.Column(db.Boolean, default=False)
+    time_of_completion = db.Column(db.DateTime())
+    arrived_home = db.Column(db.Boolean)
+    time_of_home_arrival = db.Column(db.DateTime())
     
