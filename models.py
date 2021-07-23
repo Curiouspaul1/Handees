@@ -25,6 +25,7 @@ class User(Base):
     profile_photo = db.Column(db.String(200))
     telephone = db.Column(db.String(20), unique=True)
     address = db.Column(db.String(100))
+    is_handyman = db.Column(db.Boolean, default=False)
     personal_id = db.Column(db.String(200))
 
     def __init__(self) -> None:
@@ -33,7 +34,10 @@ class User(Base):
             if self.email in current_app.config['ADMIN_EMAILS']:
                 self.role = Role.query.filter_by(name='admin').first()
             if self.role is None:
-                self.role = Role.query.filter_by(default=True).first()
+                if self.is_handyman:
+                    self.role = Role.query.filter_by(name='handyman').first()
+                else:
+                    self.role = Role.query.filter_by(default=True).first()
     
     # permission helper methods
     def can(self, perm):
