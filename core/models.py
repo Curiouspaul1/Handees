@@ -7,7 +7,7 @@ from core.extensions import db
 
 
 # Base class
-class Base(db.Model):
+class Base:
     id = db.Column(db.Integer, primary_key=True, nullable=False)
 
 # User permissions
@@ -22,7 +22,7 @@ class PERMISSIONS:
     ADMIN = 16
 
 
-class User(Base):
+class User(Base, db.Model):
     name = db.Column(db.String(50))
     email = db.Column(db.String(100), unique=True)
     signup_date = db.Column(db.DateTime, default=d.utcnow())
@@ -34,7 +34,7 @@ class User(Base):
     is_handyman = db.Column(db.Boolean, default=False)
     email_verified = db.Column(db.Boolean, default=False)
     personal_id = db.Column(db.String(200))
-    geometry = db.Column(Geometry(geometry_type='POINT'))
+    geometry = db.Column(Geometry(geometry_type='POINT', management = True))
     # relationships
     gigs_ = db.relationship('Gig', backref='owner')
     workstatus = db.relationship('Workstatus', backref='user', uselist=False)
@@ -43,10 +43,10 @@ class User(Base):
         super().__init__()
         if self.role is None:
             if self.email in current_app.config['ADMIN_EMAILS']:
-                self.role = Role.query.filter_by(name='admin').first()
+                self.role = Role.query.filter_by(role_name='admin').first()
             if self.role is None:
                 if self.is_handyman:
-                    self.role = Role.query.filter_by(name='handyman').first()
+                    self.role = Role.query.filter_by(role_name='handyman').first()
                     self.add_workstatus()
                 else:
                     self.role = Role.query.filter_by(default=True).first()
@@ -77,8 +77,8 @@ class User(Base):
     # def update_work_status(self):
          
 
-class Role(Base):
-    name = db.Column(db.String(50))
+class Role(Base, db.Model):
+    role_name = db.Column(db.String(50))
     is_default = db.Column(db.Boolean, default=False, index=True)
     permissions = db.Column(db.Integer)
     # relationships
@@ -112,30 +112,30 @@ class Role(Base):
         }
         default_role = 'client'
         for item in roles:
-            role = Role.query.filter_by(name=role).first()
+            role = Role.query.filter_by(role_name=role).first()
             if role is None:
-                role = Role(name=item)
+                role = Role(role_name=item)
             role.reset_permissions()
             # add permissions for given role
             for perm in roles[item]:
                 role.add_permission(perm)
             # set as default role if name matches default_role 
-            role.is_default = (role.name == default_role)
+            role.is_default = (role.role_name == default_role)
             db.session.add(role)
         db.session.commit()
 
 
-class Gig(Base):
+class Gig(Base, db.Model):
     title = db.Column(db.String(50))
-    description = db.Colum(db.Text)
+    description = db.Column(db.Text)
     price = db.Column(db.Float)
-    lat = db.Column(db.Float)
-    lon = db.Column(db.Float)
-    geometry = db.Column(Geometry(geometry_type='POINT'))
+    glat = db.Column(db.Float)
+    glon = db.Column(db.Float)
+    gig_geometry = db.Column(Geometry(geometry_type='POINT', management = True))
     date_created = db.Column(db.DateTime(), default=d.utcnow())
 
 
-class Workstatus(Base):
+class Workstatus(Base, db.Model):
     time_of_departure = db.Column(db.DateTime(), default=d.utcnow())
     current_lon = db.Column(db.Float)
     current_lat = db.Column(db.Float)
