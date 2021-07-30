@@ -38,6 +38,7 @@ class User(Base, db.Model):
     # relationships
     gigs_ = db.relationship('Gig', backref='owner')
     workstatus = db.relationship('Workstatus', backref='user', uselist=False)
+    kin = db.relationship('User', backref='user', uselist=False)
 
     def __init__(self) -> None:
         super().__init__()
@@ -145,3 +146,10 @@ class Workstatus(Base, db.Model):
     time_of_completion = db.Column(db.DateTime())
     arrived_home = db.Column(db.Boolean)
     time_of_home_arrival = db.Column(db.DateTime())
+
+
+class Kin(Base, db.Model):
+    name = db.Column(db.String(50))
+    email = db.Column(db.String(50))
+    telephone = db.Column(db.String(20))
+    address = db.Column(db.String(100))
